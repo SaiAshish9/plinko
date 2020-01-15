@@ -14,33 +14,41 @@ function onScoreUpdate(dropPosition, bounciness, size, bucketLabel) {
 // const k=3;
 
 function distance(pointA,pointB){
-  return Math.abs(pointA-pointB)
+  // return Math.abs(pointA-pointB)
+  return _.chain(pointA)
+        .zip(pointB)
+        .map(([a,b])=>(a-b)**2)
+        .sum()
+        .value()**0.5
 }
 
 
 function runAnalysis() {
 
-const testSetSize=10;
-const [testSet,trainingSet]= splitDataset(outputs,testSetSize);
+const testSetSize=100;
+// const [testSet,trainingSet]= splitDataset(minMax(outputs,3),testSetSize);
+const k=10;
 
-
-let numberCorrect=0;
-
-for(let i=0;i<testSet.length;i++){
-  const bucket=knn(trainingSet,testSet[i][0]);
-if(bucket===testSet[i][3]){
-  numberCorrect++;
-}
-  // console.log(bucket,testSet[i][3]);
-}
+// let numberCorrect=0;
+//
+// for(let i=0;i<testSet.length;i++){
+//   const bucket=knn(trainingSet,testSet[i][0]);
+// if(bucket===testSet[i][3]){
+//   numberCorrect++;
+// }
+//   // console.log(bucket,testSet[i][3]);
+// }
 // console.log('Accuracy:',numberCorrect/testSetSize);
 
 
-_.range(1,15).forEach(k=>{
+_.range(0,3).forEach(feature=>{
+const data=_.map(outputs,row=>[row[feature],_.last(row)])
+
+const [testSet,trainingSet]=splitDataset(minMax(data,1),testSetSize)
 
 
 const accuracy = _.chain(testSet)
- .filter(testPoint => knn(trainingSet,testPoint[0],k)===testPoint[3])
+ .filter(testPoint => knn(trainingSet,_.initial(testPoin)t,k)===testPoint[3])
  .size()
  .divide(testSetSize)
  .value()
@@ -54,7 +62,14 @@ console.log(k,' : ',accuracy);
 
 function knn(data,point,k){
   return  _.chain(data)
-   .map(row=>[distance(row[0],point),row[3]])
+   .map(row=>{
+     return [
+    distance(
+    _.initial(row)
+  , _.initial(point)),
+  _.last(row)
+  ]
+   })
    .sortBy(row=>row[0])
    .slice(0,k)
    .countBy(row=>row[1])
@@ -73,4 +88,19 @@ function splitDataset(data,testCount){
 
   return [testSet,trainingSet];
 
+}
+
+
+function minMax(data,featureCount){
+  const clonedData=_.clonedDeep(data)
+  for(let i=0;i<featureCount;i++){
+  const column=clonedData.map(row=>row[i])
+
+  const min=_.min(column)
+  const max=_.max(column)
+
+for(let j=0;j<clonedData.length;j++){
+  clonedData[j][i]=(clonedData[j][i]-min)/(max-min);
+}
+  }
 }
